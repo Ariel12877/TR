@@ -225,31 +225,97 @@
     const btnMic = document.getElementById('btnMic');
 
     let audioActual = null;
+    let escrituraActual = null;   // permite cortar la escritura en curso
+    let esperaRespuesta = null;   // timeout previo a que empiece Tom
+
+    // Detiene voz y escritura de la respuesta anterior
+    function cancelarRespuesta() {
+        clearTimeout(esperaRespuesta);
+        if (escrituraActual) { escrituraActual(); escrituraActual = null; }
+        if (audioActual) { audioActual.pause(); audioActual = null; }
+    }
 
     // === REPRODUCCIÓN DE VOZ IA CON SINCRONÍA DE TEXTO ===
+    // El texto avanza según el tiempo real del audio (currentTime / duration),
+    // así la última letra aparece casi cuando termina la voz.
+    // Si no hay audio (o el navegador lo bloquea), escribe a 50 ms por letra.
+    const FIN_TEXTO = 0.92; // el texto termina al 92% del audio, para ir un pelín adelante de la voz
+    const MS_POR_LETRA = 50;
+
     function escribirRespuestaConVoz(texto, nombreAudio) {
-        if (audioActual) audioActual.pause();
-        audioActual = new Audio(`/static/audios/${nombreAudio}`);
-        audioActual.play().catch(e => console.log("Audio aguarda interacción previa"));
+        cancelarRespuesta();
 
         const pRespuesta = document.createElement('p');
         pRespuesta.className = 'respuesta-tom';
         hoja.appendChild(pRespuesta);
 
-        let i = 0;
-        const intervalo = setInterval(() => {
-            if (i < texto.length) {
+        let mostradas = 0;
+        let cancelado = false;
+        let rafId = null;
+        let timerId = null;
+
+        const mostrarHasta = (n) => {
+            n = Math.min(texto.length, n);
+            while (mostradas < n) {
                 const spanLetra = document.createElement('span');
                 spanLetra.className = 'letra-suave';
-                spanLetra.textContent = texto.charAt(i);
+                spanLetra.textContent = texto.charAt(mostradas);
                 pRespuesta.appendChild(spanLetra);
-                
-                hoja.scrollTop = hoja.scrollHeight;
-                i++;
-            } else {
-                clearInterval(intervalo);
+                mostradas++;
             }
-        }, 50);
+            hoja.scrollTop = hoja.scrollHeight;
+        };
+
+        const cancelar = () => {
+            cancelado = true;
+            cancelAnimationFrame(rafId);
+            clearInterval(timerId);
+        };
+        escrituraActual = cancelar;
+
+        // Plan B: velocidad fija, sin audio
+        const escribirSinAudio = () => {
+            if (cancelado || timerId) return;
+            cancelAnimationFrame(rafId);
+            timerId = setInterval(() => {
+                if (mostradas < texto.length) mostrarHasta(mostradas + 1);
+                else clearInterval(timerId);
+            }, MS_POR_LETRA);
+        };
+
+        if (!nombreAudio) {
+            escribirSinAudio();
+            return;
+        }
+
+        const audio = new Audio(`/static/audios/${nombreAudio}`);
+        audioActual = audio;
+
+        const seguirAudio = () => {
+            if (cancelado) return;
+            const dur = audio.duration;
+            if (dur && isFinite(dur)) {
+                const progreso = Math.min(1, audio.currentTime / (dur * FIN_TEXTO));
+                mostrarHasta(Math.ceil(texto.length * progreso));
+            }
+            if (mostradas < texto.length && !audio.ended) {
+                rafId = requestAnimationFrame(seguirAudio);
+            }
+        };
+
+        audio.addEventListener('ended', () => {
+            if (cancelado) return;
+            mostrarHasta(texto.length);   // por si quedó algo sin escribir
+            cancelar();
+        });
+        audio.addEventListener('error', escribirSinAudio);
+
+        audio.play()
+            .then(() => { if (!cancelado) rafId = requestAnimationFrame(seguirAudio); })
+            .catch(() => {
+                console.log("No se pudo reproducir el audio; escribo sin voz");
+                escribirSinAudio();
+            });
     }
 
     // === PROCESAR PREGUNTA ===
@@ -257,6 +323,7 @@
         if (!textoPregunta.trim()) return;
 
         inputUsuario.value = '';
+        cancelarRespuesta(); // si Tom seguía hablando, se calla y empieza la nueva respuesta
 
         // 1. Mostrar texto del usuario
         const pUsuario = document.createElement('p');
@@ -279,7 +346,7 @@
             });
             const data = await response.json();
 
-            setTimeout(() => {
+            esperaRespuesta = setTimeout(() => {
                 escribirRespuestaConVoz(data.respuesta, data.audio);
             }, 2600);
         } catch (err) {
@@ -295,6 +362,7 @@
         recognition.continuous = false;
 
         btnMic.addEventListener('click', () => {
+            cancelarRespuesta(); // silenciamos a Tom para que el micrófono no capte su voz
             recognition.start();
             btnMic.classList.add('escuchando');
         });
