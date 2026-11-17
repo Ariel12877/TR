@@ -41,7 +41,7 @@
         "ayuda",
         "qué puedo preguntarte",
         "que te puedo preguntar",
-                "que sabes"
+        "que sabes"
       ],
       "respuesta": "Puedes preguntarme por la carrera: cuánto dura, qué título entrega y qué puede hacer quien se recibe. También por sus objetivos y por el perfil del egresado. Elige una pregunta y escríbela.",
       "audio": "tom_02_que_puedo_preguntar.mp3"
@@ -246,7 +246,7 @@
         "competencia"
       ],
       "respuesta": "El enfoque de competencias pone el acento en aprender a resolver problemas. Busca desarrollar habilidades generales, como la creatividad, la cooperación, el análisis y la evaluación.",
-      "audio": "tom_16_competencias.mp3"
+      "audio": "tom_35_perfil_general.mp3"
     },
     {
       "palabras_clave": [
@@ -317,7 +317,7 @@
         "qué dice edgar morin sobre la formación"
       ],
       "respuesta": "Siguiendo a Edgar Morin, la carrera sostiene que la educación actual debe preparar al futuro profesional para navegar en un mar de incertidumbres y complejidades, con apenas algunos islotes de seguridad.",
-      "audio": "tom_22_morin.mp3"
+      "audio": "tom_20_como_se_aprende.mp3"
     },
     {
       "palabras_clave": [
@@ -920,11 +920,11 @@
   "genericas": [
     {
       "respuesta": "Veo la curiosidad en tus palabras... Pregúntame sobre el Profesorado de Educación Secundaria en Informática y te daré las respuestas.",
-      "audio": "tom_generico.mp3"
+      "audio": "tom_02_que_puedo_preguntar.mp3"
     },
     {
-      "respuesta": "Se desvanese la tinta de tus palabras... Pregúntame sobre el Profesorado de Educación Secundaria en Informática y te daré las respuestas.",
-      "audio": "tom_generico2.mp3"
+      "respuesta": "Se desvanece la tinta de tus palabras... Pregúntame sobre el Profesorado de Educación Secundaria en Informática y te daré las respuestas.",
+      "audio": "tom_02_que_puedo_preguntar.mp3"
     }
   ]
 }
